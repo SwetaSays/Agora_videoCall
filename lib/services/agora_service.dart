@@ -1,44 +1,44 @@
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 const APP_ID = "1d48332c5bb64d82ae0567d5e9cd47b5";
-const TOKEN = "";
+const TOKEN = null; // Temporary token or null for testing
 const CHANNEL = "video";
 
 class AgoraService {
-  final RtcEngine _engine;
-  bool _joined = false;
+  late final RtcEngine _engine;
+  bool joined = false;
   int? remoteUid;
   bool localVideoEnabled = true;
   bool localAudioEnabled = true;
 
-  AgoraService._(this._engine);
+  AgoraService._();
 
   static Future<AgoraService> create() async {
-    if (APP_ID.startsWith('<')) {
-      throw Exception('Please set your Agora APP_ID in agora_service.dart');
+    if (APP_ID.isEmpty) {
+      throw Exception("Please set your Agora APP_ID");
     }
-    final engine = createAgoraRtcEngine();
-    await engine.initialize(RtcEngineContext(appId: APP_ID));
-    await engine.enableVideo();
-    await engine.startPreview();
 
-    final service = AgoraService._(engine);
-    engine.registerEventHandler(
-      RtcEngineEventHandler(
-        onJoinChannelSuccess: (connection, elapsed) {
-          service._joined = true;
-        },
-        onUserJoined: (connection, remoteUid, elapsed) {
-          service.remoteUid = remoteUid;
-        },
-        onUserOffline: (connection, remoteUid, reason) {
-          if (service.remoteUid == remoteUid) {
-            service.remoteUid = null;
-          }
-        },
-      ),
-    );
+    final service = AgoraService._();
+    service._engine = createAgoraRtcEngine();
+    await service._engine.initialize(RtcEngineContext(appId: APP_ID));
+    await service._engine.enableVideo();
+    await service._engine.startPreview();
+
+    // Event handlers
+    service._engine.registerEventHandler(RtcEngineEventHandler(
+      onJoinChannelSuccess: (connection, elapsed) {
+        debugPrint("Joined channel: ${connection.channelId}");
+        service.joined = true;
+      },
+      onUserJoined: (connection, uid, elapsed) {
+        debugPrint("Remote user joined: $uid");
+        service.remoteUid = uid;
+      },
+      onUserOffline: (connection, uid, reason) {
+        if (service.remoteUid == uid) service.remoteUid = null;
+      },
+    ));
 
     return service;
   }
@@ -54,16 +54,16 @@ class AgoraService {
 
   Future<void> leave() async {
     await _engine.leaveChannel();
-    _joined = false;
+    joined = false;
     remoteUid = null;
   }
 
-  setAudioEnabled(bool enabled) {
+  void setAudioEnabled(bool enabled) {
     localAudioEnabled = enabled;
     _engine.muteLocalAudioStream(!enabled);
   }
 
-  setVideoEnabled(bool enabled) {
+  void setVideoEnabled(bool enabled) {
     localVideoEnabled = enabled;
     if (enabled) {
       _engine.startPreview();
@@ -74,10 +74,5 @@ class AgoraService {
     }
   }
 
-  Future<void> startScreenShare() async {
-    debugPrint('Screen share requested - platform-specific implementation required.');
-  }
-
   RtcEngine get engine => _engine;
-  bool get joined => _joined;
 }

@@ -9,7 +9,7 @@ StateNotifierProvider<AuthStateNotifier, bool>((ref) {
 });
 
 class AuthStateNotifier extends StateNotifier<bool> {
-  final Ref ref; // use Ref instead of Reader
+  final Ref ref;
   AuthStateNotifier(this.ref) : super(false);
 
   Future<bool> login(String email, String password) async {
@@ -19,7 +19,5 @@ class AuthStateNotifier extends StateNotifier<bool> {
     return ok;
   }
 
-  void logout() {
-    state = false;
-  }
+  void logout() => state = false;
 }

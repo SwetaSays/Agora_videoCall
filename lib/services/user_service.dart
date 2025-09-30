@@ -1,39 +1,21 @@
-import 'package:dio/dio.dart';
-import 'package:hive/hive.dart';
+import 'dart:convert';
+import 'package:flutter/services.dart';
 import '../models/user_model.dart';
 
 class UserService {
-  final Dio _dio = Dio();
-  final Box box = Hive.box('cacheBox');
-
-  Future<List<UserModel>> fetchUsers({int page = 1}) async {
-    final cached = _getCachedUsers();
+  /// Fetch users from local JSON (works on web & mobile)
+  Future<List<UserModel>> fetchUsers() async {
     try {
-      final res = await _dio.get('https://reqres.in/api/users', queryParameters: {'page': page});
-      if (res.statusCode == 200) {
-        final data = res.data['data'] as List;
-        final users = data.map((e) => UserModel.fromJson(e)).toList();
-        _cacheUsers(users);
-        return users;
-      } else {
-        if (cached != null) return cached;
-        return [];
-      }
+      // Load JSON from assets
+      final jsonString = await rootBundle.loadString('assets/users.json');
+      final jsonData = json.decode(jsonString)['data'] as List<dynamic>;
+
+      if (jsonData.isEmpty) return [];
+
+      return jsonData.map((e) => UserModel.fromJson(e)).toList();
     } catch (e) {
-      if (cached != null) return cached;
-      rethrow;
+      print('Failed to load users: $e');
+      return [];
     }
-  }
-
-  void _cacheUsers(List<UserModel> users) {
-    final list = users.map((u) => u.toJson()).toList();
-    box.put('users', list);
-    box.put('users_timestamp', DateTime.now().toIso8601String());
-  }
-
-  List<UserModel>? _getCachedUsers() {
-    final data = box.get('users') as List<dynamic>?;
-    if (data == null) return null;
-    return data.map((e) => UserModel.fromJson(Map<String, dynamic>.from(e))).toList();
   }
 }

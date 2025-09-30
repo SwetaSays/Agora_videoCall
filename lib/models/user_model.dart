@@ -22,12 +22,4 @@ class UserModel {
       avatar: json['avatar'],
     );
   }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'email': email,
-    'first_name': firstName,
-    'last_name': lastName,
-    'avatar': avatar,
-  };
 }
